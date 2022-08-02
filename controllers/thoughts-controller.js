@@ -1,77 +1,79 @@
-const { Comment, Pizza } = require('../models');
+const { Thought, User } = require('../models');
 
-const commentController = {
-  // add comment to pizza
-  addComment({ params, body }, res) {
-    console.log(params);
-    Comment.create(body)
-      .then(({ _id }) => {
-        return Pizza.findOneAndUpdate(
-          { _id: params.pizzaId },
-          { $push: { comments: _id } },
+const thoughtController = {
+//get's all thoughts  
+getAllThoughts(req, res) {
+  Thought.find({})
+  .then(dbThoughtData => res.json(dbThoughtData))
+  .catch(err => {
+    console.log(err);
+    res.status().json(err);
+  });
+},
+
+
+  // get's thoughts by id
+  getThoughtById({ params }, res) {
+    Thought.findOne({ _id: params.thoughtid })
+      .then(dbThoughtData => {
+        if(!dbThoughtData) {
+          res.status(400).json({ message: 'No thought with this id'});
+          return;
+        }
+        res.json(dbThoughtData);
+      })
+      .catch(err => {
+        console.log(err);
+        res.status(400).json(err);
+      });
+    },
+
+    updateThought({ params, body }, res) {
+      Thought.findOneAndUpdate({ _id: params.thoughtid }, body, { new: true, runValidators:
+      true })
+      .then(dbThoughtData => {
+        if (!dbThoughtData) {
+          res.status(404).json({ message: 'No thought with this id' });
+          return;
+        }
+        res.json(dbThoughtData);
+      })
+      .catch(err => res.status(400).json(err));
+    },
+
+ 
+  // remove thoughts
+  removeThought({ params }, res) {
+    Thought.findOneAndDelete({ _id: params.thoughtId })
+      .then(deletedThought => {
+        if (!deletedThought) {
+          return res.status(404).json({ message: 'No thought with this id' });
+        }
+        return User.findOneAndUpdate(
+          { _id: params.userId },
+          { $pull: { thoughts: params.thoughtId } },
           { new: true }
         );
       })
-      .then(dbPizzaData => {
-        console.log(dbPizzaData);
-        if (!dbPizzaData) {
-          res.status(404).json({ message: 'No pizza found with this id!' });
+      .then(dbUserData => {
+        if (!dbUserData) {
+          res.status(404).json({ message: 'No thought with this id' });
           return;
         }
-        res.json(dbPizzaData);
+        res.json(dbUserData);
       })
       .catch(err => res.json(err));
   },
-
-  // add reply to comment
-  addReply({ params, body }, res) {
-    Comment.findOneAndUpdate(
-      { _id: params.commentId },
-      { $push: { replies: body } },
-      { new: true, runValidators: true }
-    )
-      .then(dbPizzaData => {
-        if (!dbPizzaData) {
-          res.status(404).json({ message: 'No pizza found with this id!' });
-          return;
-        }
-        res.json(dbPizzaData);
-      })
-      .catch(err => res.json(err));
-  },
-
-  // remove comment
-  removeComment({ params }, res) {
-    Comment.findOneAndDelete({ _id: params.commentId })
-      .then(deletedComment => {
-        if (!deletedComment) {
-          return res.status(404).json({ message: 'No comment with this id!' });
-        }
-        return Pizza.findOneAndUpdate(
-          { _id: params.pizzaId },
-          { $pull: { comments: params.commentId } },
-          { new: true }
-        );
-      })
-      .then(dbPizzaData => {
-        if (!dbPizzaData) {
-          res.status(404).json({ message: 'No pizza found with this id!' });
-          return;
-        }
-        res.json(dbPizzaData);
-      })
-      .catch(err => res.json(err));
-  },
-  // remove reply
-  removeReply({ params }, res) {
-    Comment.findOneAndUpdate(
-      { _id: params.commentId },
-      { $pull: { replies: { replyId: params.replyId } } },
+  // remove reactions
+  removeReaction({ params }, res) {
+    Thought.findOneAndUpdate(
+      { _id: params.thoughtId },
+      { $pull: { replies: { replyId: params.reactionId } } },
       { new: true }
     )
-      .then(dbPizzaData => res.json(dbPizzaData))
+      .then(dbThoughtData => res.json(dbThoughtData))
       .catch(err => res.json(err));
   }
 };
 
-module.exports = commentController;
+module.exports = thoughtController;
