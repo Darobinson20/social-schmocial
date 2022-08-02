@@ -1,6 +1,6 @@
 const { User, Thought } = require('../models');
 
-const pizzaController = {
+const userController = {
   // get all users
   getAllUsers(req, res) {
     User.find({})
